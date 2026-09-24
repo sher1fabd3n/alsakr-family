@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "667567073240",
+    "project_id": "alsakrschool-5dc3f",
+    "storage_bucket": "alsakrschool-5dc3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:667567073240:android:e22d47e2a43e9f46e874ad",
+        "android_client_info": {
+          "package_name": "com.alsakr.school.family"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX19VhNerRGY7r-cB9qz6JzHN3Ndy-jcc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
