@@ -43,8 +43,51 @@ class ParentChildHubScreen extends StatelessWidget {
               child: ChildSwitcher(compact: true, height: 120),
             ),
           ),
-        if (child == null)
-          const SliverFillRemaining(child: Center(child: Text('اسحب للتبديل بين الأبناء في الأعلى')))
+        if (ctx.isLoading && child == null)
+          const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+        else if (ctx.error != null && child == null)
+          SliverFillRemaining(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(ctx.error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => ctx.bootstrap(force: true),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (ctx.children.isEmpty)
+          SliverFillRemaining(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('لا يوجد أبناء مرتبطون بهذا الحساب.', textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => ctx.bootstrap(force: true),
+                    child: const Text('تحديث'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (child == null)
+          SliverFillRemaining(
+            child: Center(
+              child: FilledButton(
+                onPressed: () => ctx.bootstrap(force: true),
+                child: const Text('عرض بيانات الأبناء'),
+              ),
+            ),
+          )
         else
           SliverPadding(
             padding: EdgeInsets.all(embedded ? 16 : 20),

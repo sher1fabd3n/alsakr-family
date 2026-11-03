@@ -20,6 +20,7 @@ import '../../features/parent/state/unread_badge_store.dart';
 import '../../services/push_notification_service.dart';
 import '../../features/transportation/services/transportation_service.dart';
 import '../../utils/national_id_validator.dart';
+import '../../features/parent/state/parent_child_context.dart';
 import '../parent/parent_first_login_screen.dart';
 import '../parent/parent_shell.dart';
 import '../shell/main_shell.dart';
@@ -120,8 +121,14 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         final needsSetup = loginResponse.profile.needsFirstLoginSetup;
         if (!needsSetup) {
+          final childCtx = context.read<ParentChildContext>();
+          final badges = context.read<UnreadBadgeStore>();
+          childCtx.clear();
           try {
-            await context.read<UnreadBadgeStore>().refresh();
+            await childCtx.bootstrap(force: true);
+          } catch (_) {}
+          try {
+            await badges.refresh();
           } catch (_) {}
         }
         if (!mounted) return;

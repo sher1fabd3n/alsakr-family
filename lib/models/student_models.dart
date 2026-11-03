@@ -122,17 +122,26 @@ class StudentResult {
 
 class StudentResultsResponse {
   final bool resultsBlocked;
+  final bool blockedByAccounting;
+  final bool gradeResultsHidden;
   final List<StudentResult> results;
 
   const StudentResultsResponse({
     required this.resultsBlocked,
+    this.blockedByAccounting = false,
+    this.gradeResultsHidden = false,
     required this.results,
   });
 
   factory StudentResultsResponse.fromJson(Map<String, dynamic> json) {
     final list = json['results'] as List<dynamic>? ?? [];
+    final blocked = json['resultsBlocked'] as bool? ?? false;
+    final byAccounting = json['blockedByAccounting'] as bool? ?? false;
+    final gradeHidden = json['gradeResultsHidden'] as bool? ?? false;
     return StudentResultsResponse(
-      resultsBlocked: json['resultsBlocked'] as bool? ?? false,
+      resultsBlocked: blocked,
+      blockedByAccounting: byAccounting || (blocked && !gradeHidden),
+      gradeResultsHidden: gradeHidden,
       results: list
           .map((e) => StudentResult.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -166,6 +175,8 @@ class FeeReceipt {
   final double amount;
   final String originalFileName;
   final String? notes;
+  final String? adminNotes;
+  final bool fromSchool;
   final DateTime uploadedAt;
   final String status;
 
@@ -175,18 +186,22 @@ class FeeReceipt {
     required this.amount,
     required this.originalFileName,
     this.notes,
+    this.adminNotes,
+    this.fromSchool = false,
     required this.uploadedAt,
     required this.status,
   });
 
   factory FeeReceipt.fromJson(Map<String, dynamic> json) {
     return FeeReceipt(
-      id: json['id'] as int,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       category: json['category'] as String? ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       originalFileName: json['originalFileName'] as String? ?? '',
       notes: json['notes'] as String?,
-      uploadedAt: DateTime.parse(json['uploadedAt'] as String),
+      adminNotes: json['adminNotes'] as String?,
+      fromSchool: json['fromSchool'] == true,
+      uploadedAt: DateTime.tryParse('${json['uploadedAt'] ?? ''}') ?? DateTime.now(),
       status: json['status'] as String? ?? '',
     );
   }

@@ -1,7 +1,7 @@
 name: alsakr_family
 description: الصقر - طالب وولي أمر
 publish_to: "none"
-version: 1.0.6+7
+version: 1.0.9+10
 
 environment:
   sdk: ^3.10.8

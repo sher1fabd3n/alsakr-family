@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
@@ -10,6 +13,7 @@ import '../../../models/student_models.dart';
 import '../services/parent_family_service.dart';
 import '../state/parent_child_context.dart';
 import '../widgets/child_switcher.dart';
+import 'parent_upload_receipt_screen.dart';
 
 class ParentChildFeesScreen extends StatefulWidget {
   const ParentChildFeesScreen({super.key});
@@ -21,6 +25,43 @@ class ParentChildFeesScreen extends StatefulWidget {
 class _ParentChildFeesScreenState extends State<ParentChildFeesScreen> {
   int? _studentId;
   Future<StudentFeesResponse>? _future;
+
+  Future<void> _openUpload() async {
+    if (_studentId == null) return;
+    final uploaded = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => ParentUploadReceiptScreen(studentId: _studentId!)),
+    );
+    if (uploaded == true && mounted && _studentId != null) {
+      setState(() {
+        _future = context.read<ParentFamilyService>().getChildFees(_studentId!);
+      });
+    }
+  }
+
+  Future<void> _openReceipt(FeeReceipt receipt) async {
+    if (_studentId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final service = context.read<ParentFamilyService>();
+    try {
+      final bytes = await service.downloadChildFeeReceipt(_studentId!, receipt.id);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(bytes),
+              name: receipt.originalFileName.isEmpty ? 'receipt' : receipt.originalFileName,
+              mimeType: 'application/octet-stream',
+            ),
+          ],
+          text: receipt.category,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -248,14 +289,25 @@ class _ParentChildFeesScreenState extends State<ParentChildFeesScreen> {
                           ),
                         ),
                       ],
-                      if (fees.receipts.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        const SectionHeader(title: 'إيصالات الدفع'),
-                        const SizedBox(height: 12),
+                      const SizedBox(height: 20),
+                      FadeSlideIn(
+                        child: FilledButton.icon(
+                          onPressed: _openUpload,
+                          icon: const Icon(Icons.upload_file_rounded),
+                          label: const Text('رفع إيصال دفع'),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const SectionHeader(title: 'إيصالات الدفع'),
+                      const SizedBox(height: 12),
+                      if (fees.receipts.isEmpty)
+                        const Text('لا توجد إيصالات بعد.', style: TextStyle(color: AppColors.textSecondary))
+                      else
                         ...fees.receipts.map(
                           (r) => Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: AppCard(
+                              onTap: () => _openReceipt(r),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -263,7 +315,18 @@ class _ParentChildFeesScreenState extends State<ParentChildFeesScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(r.category, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                        Text(r.status, style: const TextStyle(color: AppColors.textSecondary)),
+                                        Text(
+                                          r.fromSchool ? 'من المدرسة • ${r.status}' : r.status,
+                                          style: const TextStyle(color: AppColors.textSecondary),
+                                        ),
+                                        if ((r.adminNotes ?? r.notes)?.trim().isNotEmpty == true)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              r.adminNotes?.trim().isNotEmpty == true ? r.adminNotes! : r.notes!,
+                                              style: const TextStyle(fontSize: 13),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -274,7 +337,6 @@ class _ParentChildFeesScreenState extends State<ParentChildFeesScreen> {
                             ),
                           ),
                         ),
-                      ],
                     ]),
                   );
                 },
@@ -346,7 +408,7 @@ class _FeeSyncRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text('$label: ${currency.format(amount)}',

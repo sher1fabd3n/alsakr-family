@@ -30,9 +30,7 @@ class _ParentShellState extends State<ParentShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = context.read<ParentChildContext>();
-      if (ctx.family == null && !ctx.isLoading) {
-        ctx.bootstrap();
-      }
+      ctx.bootstrap(force: ctx.children.isEmpty || ctx.activeChild == null || ctx.error != null);
       context.read<UnreadBadgeStore>().refresh();
       context.read<PushNotificationService>().consumePending();
       context.read<PushNotificationService>().registerAfterLogin(

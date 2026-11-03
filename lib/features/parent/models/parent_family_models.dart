@@ -73,9 +73,9 @@ class ChildDashboardSummary {
   });
 
   factory ChildDashboardSummary.fromJson(Map<String, dynamic> json) => ChildDashboardSummary(
-        studentId: json['studentId'] as int,
+        studentId: (json['studentId'] as num?)?.toInt() ?? 0,
         name: json['name'] as String? ?? '',
-        rollNo: json['rollNo'] as int? ?? 0,
+        rollNo: (json['rollNo'] as num?)?.toInt() ?? 0,
         grade: json['grade'] as String? ?? '',
         profilePhotoUrl: json['profilePhotoUrl'] as String?,
         transportationStatus: json['transportationStatus'] as String? ?? '',
@@ -133,8 +133,8 @@ class FamilyDashboardSummary {
   factory FamilyDashboardSummary.fromJson(Map<String, dynamic> json) {
     final list = json['children'] as List<dynamic>? ?? [];
     return FamilyDashboardSummary(
-      totalChildren: json['totalChildren'] as int? ?? list.length,
-      activeStudentId: json['activeStudentId'] as int?,
+      totalChildren: (json['totalChildren'] as num?)?.toInt() ?? list.length,
+      activeStudentId: (json['activeStudentId'] as num?)?.toInt(),
       children: list.map((e) => ChildDashboardSummary.fromJson(e as Map<String, dynamic>)).toList(),
     );
   }

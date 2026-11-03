@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../models/student_models.dart';
 import '../../../widgets/exam_grouped_results_view.dart';
+import '../../../widgets/results_blocked_banner.dart';
 import '../services/parent_family_service.dart';
 import '../state/parent_child_context.dart';
 import '../widgets/child_switcher.dart';
@@ -72,8 +73,14 @@ class _ParentChildGradesScreenState extends State<ParentChildGradesScreen> {
                   }
 
                   final data = snapshot.data!;
-                  if (data.resultsBlocked) {
-                    return const SliverFillRemaining(child: Center(child: Text('النتائج غير متاحة حالياً')));
+                  if (data.blockedByAccounting || data.gradeResultsHidden || data.resultsBlocked) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ResultsBlockedBanner(gradeHidden: data.gradeResultsHidden),
+                      ),
+                    );
                   }
                   if (data.results.isEmpty) {
                     return const SliverFillRemaining(child: Center(child: Text('لا توجد نتائج مسجلة')));

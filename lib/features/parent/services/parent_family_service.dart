@@ -69,6 +69,52 @@ class ParentFamilyService {
     return StudentFeesResponse.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<String> uploadChildFeeReceipt({
+    required int studentId,
+    required String category,
+    required double amount,
+    String? notes,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'category': category,
+        'amount': amount,
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      });
+      final response = await _apiClient.dio.post(
+        '/api/parent/children/$studentId/fees/receipts',
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      );
+      final data = response.data;
+      if (data is Map && data['message'] != null) return data['message'].toString();
+      return 'تم رفع إيصال الدفع.';
+    } on DioException catch (e) {
+      throw Exception(_apiClient.extractErrorMessage(e));
+    }
+  }
+
+  Future<List<int>> downloadChildFeeReceipt(int studentId, int receiptId) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/api/parent/children/$studentId/fees/receipts/$receiptId/file',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (data is List<int>) return data;
+      if (data is List) return data.cast<int>();
+      throw Exception('تعذر تنزيل الإيصال.');
+    } on DioException catch (e) {
+      throw Exception(_apiClient.extractErrorMessage(e));
+    }
+  }
+
   Future<List<ParentHomeworkItem>> getChildHomework(int studentId) async {
     final response = await _apiClient.dio.get('/api/parent/children/$studentId/homework');
     final list = response.data as List<dynamic>;

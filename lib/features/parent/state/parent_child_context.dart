@@ -43,26 +43,31 @@ class ParentChildContext extends ChangeNotifier {
             orElse: () => null,
           );
 
-  Future<void> bootstrap() async {
+  Future<void> bootstrap({bool force = false}) async {
     if (_loading) return;
+    if (!force && _family != null && children.isNotEmpty && _activeChild != null) return;
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
       _family = await _service.getFamilyDashboard();
+      _family = FamilyDashboardSummary(
+        totalChildren: _family!.totalChildren,
+        activeStudentId: _family!.activeStudentId,
+        children: _family!.children.where((c) => c.studentId > 0).toList(),
+      );
       for (final c in _family!.children) {
         _summaryCache[c.studentId] = c;
       }
 
       final storedId = await _readStoredStudentId();
       final serverActive = _family!.activeStudentId;
-      final candidate = _pickValidId(storedId ?? serverActive);
+      final candidate = _pickValidId(storedId ?? serverActive) ??
+          (_family!.children.isNotEmpty ? _family!.children.first.studentId : null);
 
       if (candidate != null) {
-        await _setActiveInternal(candidate, syncServer: storedId == null);
-      } else if (_family!.children.isNotEmpty) {
-        await _setActiveInternal(_family!.children.first.studentId, syncServer: true);
+        await _activateChild(candidate, syncServer: storedId == null);
       }
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
@@ -90,7 +95,7 @@ class ParentChildContext extends ChangeNotifier {
 
   Future<void> selectChild(int studentId) async {
     if (_activeStudentId == studentId) return;
-    await _setActiveInternal(studentId, syncServer: true);
+    await _activateChild(studentId, syncServer: true);
     unawaited(_service.refreshChildData(studentId));
   }
 
@@ -176,25 +181,28 @@ class ParentChildContext extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> _setActiveInternal(int studentId, {required bool syncServer}) async {
-    _loading = true;
+  Future<void> _activateChild(int studentId, {required bool syncServer}) async {
+    final cached = childById(studentId);
+    _activeStudentId = studentId;
+    if (cached != null) {
+      _activeChild = cached;
+    }
     notifyListeners();
     try {
-      ChildDashboardSummary summary;
-      if (syncServer) {
-        summary = await _service.switchActiveChild(studentId);
-      } else {
-        summary = _summaryCache[studentId] ?? await _service.getChildSummary(studentId);
-      }
+      final summary = syncServer
+          ? await _service.switchActiveChild(studentId)
+          : cached ?? await _service.getChildSummary(studentId);
       _activeStudentId = studentId;
       _activeChild = summary;
       _summaryCache[studentId] = summary;
       await _apiClient.writeSecure(_storageKey, studentId.toString());
     } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-    } finally {
-      _loading = false;
-      notifyListeners();
+      if (_activeChild == null && cached != null) {
+        _activeChild = cached;
+      }
+      if (_activeChild == null) {
+        _error = e.toString().replaceFirst('Exception: ', '');
+      }
     }
   }
 

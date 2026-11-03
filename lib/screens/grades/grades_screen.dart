@@ -5,6 +5,7 @@ import '../../core/widgets/section_header.dart';
 import '../../models/student_models.dart';
 import '../../services/student_services.dart';
 import '../../widgets/exam_grouped_results_view.dart';
+import '../../widgets/results_blocked_banner.dart';
 
 class GradesScreen extends StatefulWidget {
   const GradesScreen({super.key});
@@ -61,9 +62,13 @@ class _GradesScreenState extends State<GradesScreen> {
                   }
 
                   final data = snapshot.data!;
-                  if (data.resultsBlocked) {
-                    return const SliverFillRemaining(
-                      child: Center(child: Text('النتائج غير متاحة حالياً')),
+                  if (data.blockedByAccounting || data.gradeResultsHidden || data.resultsBlocked) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ResultsBlockedBanner(gradeHidden: data.gradeResultsHidden),
+                      ),
                     );
                   }
                   if (data.results.isEmpty) {
